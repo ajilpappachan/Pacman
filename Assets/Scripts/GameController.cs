@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameController : MonoBehaviour
 {
@@ -12,16 +13,26 @@ public class GameController : MonoBehaviour
     Dictionary<GridIndex, GridCell> gridMap = new Dictionary<GridIndex, GridCell>();
     List<GridIndex> activeCells = new List<GridIndex>();
 
+    [Header("UI Setup")]
+    [SerializeField] Text percentageText;
+    [SerializeField] Text livesText;
+    int totalCells;
+    int filledCells;
+
     [Header("Character Setup")]
     public float BASE_SPEED;
 
     [Header("Pacman Setup")]
     [SerializeField] GameObject pacmanObject;
     Pacman pacman;
+    [SerializeField] int lives = 3;
 
     // Start is called before the first frame update
     void Start()
     {
+        totalCells = (height - 2) * (width - 2); // Total Cells Excluding the border cells
+        Debug.Log(totalCells);
+        filledCells = 0;
         gridInit();
     }
 
@@ -54,17 +65,17 @@ public class GameController : MonoBehaviour
             {
                 gridMap[index].setActive(true);
                 gridMap[index].setResolved(true);
-                gridMap[index].isBoundary = true;
                 continue;
             }
-
-            if(index.x == 1 && index.y == height - 2)
-            {
-                GameObject pacSpawn = gridMap[index].spawnObject(pacmanObject);
-                pacman = pacSpawn.GetComponent<Pacman>();
-                pacman.pacmanInit(index, this);
-            }
         }
+        spawnPacman(randomCell());
+    }
+
+    void spawnPacman(GridIndex index)
+    {
+        GameObject pacSpawn = gridMap[index].spawnObject(pacmanObject);
+        pacman = pacSpawn.GetComponent<Pacman>();
+        pacman.pacmanInit(index, this);
     }
 
     public bool isCellActive(GridIndex index)
@@ -75,10 +86,29 @@ public class GameController : MonoBehaviour
     public void setCellActive(GridIndex index)
     {
         gridMap[index].setActive(true);
+        filledCells++;
         activeCells.Add(index);
         List<GridIndex> neighbours = getNeighbourCells(index);
         if(neighbours.Count >= 2)
+        {
             floodFill();
+        }
+        setUIPercentage();
+    }
+
+    void setUIPercentage()
+    {
+        int fillPercent = (int)((float)filledCells / (float)totalCells * 100);
+        percentageText.text = "Progress: " + fillPercent + "/80";
+    }
+
+    public bool isCaught(GridIndex index)
+    {
+        List<GridIndex> neighbours = getNeighbourCells(index);
+        if (neighbours.Count == 4)
+            return true;
+        else
+            return false;
     }
 
     List<GridIndex> getNeighbourCells(GridIndex index)
@@ -130,7 +160,7 @@ public class GameController : MonoBehaviour
                 }
                 foreach(GridIndex i in LeftCells)
                 {
-                    if (gridMap[i].isActive && !gridMap[i].isBoundary)
+                    if (gridMap[i].isActive && !gridMap[i].isResolved)
                     {
                         activeBounds.Add(i);
                         break;
@@ -138,7 +168,7 @@ public class GameController : MonoBehaviour
                 }
                 foreach (GridIndex i in RightCells)
                 {
-                    if (gridMap[i].isActive && !gridMap[i].isBoundary)
+                    if (gridMap[i].isActive && !gridMap[i].isResolved)
                     {
                         activeBounds.Add(i);
                         break;
@@ -146,7 +176,7 @@ public class GameController : MonoBehaviour
                 }
                 foreach (GridIndex i in UpCells)
                 {
-                    if (gridMap[i].isActive && !gridMap[i].isBoundary)
+                    if (gridMap[i].isActive && !gridMap[i].isResolved)
                     {
                         activeBounds.Add(i);
                         break;
@@ -154,7 +184,7 @@ public class GameController : MonoBehaviour
                 }
                 foreach (GridIndex i in DownCells)
                 {
-                    if (gridMap[i].isActive && !gridMap[i].isBoundary)
+                    if (gridMap[i].isActive && !gridMap[i].isResolved)
                     {
                         activeBounds.Add(i);
                         break;
@@ -163,25 +193,29 @@ public class GameController : MonoBehaviour
                 if (activeBounds.Count > 2)
                 {
                     gridMap[index].setActive(true);
-                    gridMap[index].setResolved(true);
+                    //gridMap[index].setResolved(true);
+                    filledCells++;
                     activeCells.Add(index);
                     didFlood = true;
                 }
             }
         }
-        if(didFlood)
-        {
-            foreach (GridIndex idx in activeCells)
-            {
-                gridMap[idx].setResolved(true);
-            }
-            activeCells.Clear();
-        }
+        //if(didFlood)
+        //{
+        //    foreach (GridIndex idx in activeCells)
+        //    {
+        //        gridMap[idx].setResolved(true);
+        //    }
+        //    activeCells.Clear();
+        //}
+        if (didFlood) activeCells.Clear();
         return didFlood;
     }
 
     void pacMovement()
     {
+        if (!pacman) return;
+
         if(Input.GetKey(KeyCode.LeftArrow) && !pacman.isMoving)
         {
             pacman.Move(new Vector2(-1, 0));
@@ -207,5 +241,35 @@ public class GameController : MonoBehaviour
             pacman.Move();
             return;
         }
+    }
+
+    public void loseLife()
+    {
+        lives--;
+        livesText.text = "Lives: " + lives;
+        foreach(GridIndex index in activeCells)
+        {
+            gridMap[index].setActive(false);
+        }
+        if (lives > 0)
+            spawnPacman(randomCell());
+
+    }
+
+    GridIndex randomCell()
+    {
+        GridIndex index = new GridIndex();
+        bool spawned = false;
+        while(!spawned)
+        {
+            int x = Random.Range(1, width - 2);
+            int y = Random.Range(1, height - 2);
+            Debug.Log(x);
+            Debug.Log(y);
+            index = new GridIndex(x, y);
+            spawned = !gridMap[index].isActive;
+        }
+        Debug.Log(index.x + " " + index.y);
+        return index;
     }
 }

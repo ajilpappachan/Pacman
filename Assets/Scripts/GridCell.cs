@@ -8,7 +8,6 @@ public class GridCell
     public bool isActive;
     public bool isResolved;
     public Cell cell;
-    public bool isBoundary;
 
     public GridCell(GridIndex index, Cell cell)
     {
@@ -16,7 +15,6 @@ public class GridCell
         this.cell = cell;
         this.isActive = false;
         this.isResolved = false;
-        this.isBoundary = false;
     }
 
     public void setActive(bool value)

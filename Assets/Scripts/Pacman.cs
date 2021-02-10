@@ -9,9 +9,10 @@ public class Pacman : MonoBehaviour
     float speed;
     [SerializeField] float turnDuration = 0.2f;
     public bool isMoving;
+    GridIndex nextCell;
     Vector2 currentDir;
-    Vector2 currentRot;
     Animator animator;
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -19,9 +20,13 @@ public class Pacman : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
-        
+        if (controller.isCaught(index))
+        {
+            controller.loseLife();
+            Destroy(gameObject);
+        }
     }
 
     public void pacmanInit(GridIndex index, GameController controller)
@@ -30,13 +35,12 @@ public class Pacman : MonoBehaviour
         this.controller = controller;
         isMoving = false;
         speed = controller.BASE_SPEED * 2;
-        currentRot = new Vector2(0, 0);
         animator = GetComponent<Animator>();
     }
 
     public void Move(Vector2 direction)
     {
-        GridIndex nextCell = new GridIndex(index.x + (int)direction.x, index.y + (int)direction.y);
+        nextCell = new GridIndex(index.x + (int)direction.x, index.y + (int)direction.y);
         if(!controller.isCellActive(nextCell))
             StartCoroutine(move(direction));
         StartCoroutine(rotate(direction));
@@ -44,7 +48,7 @@ public class Pacman : MonoBehaviour
 
     public void Move()
     {
-        GridIndex nextCell = new GridIndex(index.x + (int)currentDir.x, index.y + (int)currentDir.y);
+        nextCell = new GridIndex(index.x + (int)currentDir.x, index.y + (int)currentDir.y);
         if (!controller.isCellActive(nextCell))
             StartCoroutine(move(currentDir));
     }
@@ -64,7 +68,7 @@ public class Pacman : MonoBehaviour
             yield return null;
         }
         transform.position = destPos;
-        index = new GridIndex(index.x + (int)dir.x, index.y + (int)dir.y);
+        index = nextCell;
 
         isMoving = false;
     }
