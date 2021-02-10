@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+[RequireComponent(typeof(SwipeManager))]
 public class GameController : MonoBehaviour
 {
     [Header("Grid Setup")]
@@ -21,6 +22,7 @@ public class GameController : MonoBehaviour
 
     [Header("Character Setup")]
     public float BASE_SPEED;
+    SwipeManager swipeManager;
 
     [Header("Pacman Setup")]
     [SerializeField] GameObject pacmanObject;
@@ -31,8 +33,8 @@ public class GameController : MonoBehaviour
     void Start()
     {
         totalCells = (height - 2) * (width - 2); // Total Cells Excluding the border cells
-        Debug.Log(totalCells);
         filledCells = 0;
+        swipeManager = GetComponent<SwipeManager>();
         gridInit();
     }
 
@@ -42,6 +44,7 @@ public class GameController : MonoBehaviour
         pacMovement();
     }
 
+    #region Grid Management
     void gridInit()
     {
         for(int row = 0; row < height; row++)
@@ -71,62 +74,12 @@ public class GameController : MonoBehaviour
         spawnPacman(randomCell());
     }
 
-    void spawnPacman(GridIndex index)
-    {
-        GameObject pacSpawn = gridMap[index].spawnObject(pacmanObject);
-        pacman = pacSpawn.GetComponent<Pacman>();
-        pacman.pacmanInit(index, this);
-    }
-
-    public bool isCellActive(GridIndex index)
-    {
-        return gridMap[index].isActive;
-    }
-
-    public void setCellActive(GridIndex index)
-    {
-        gridMap[index].setActive(true);
-        filledCells++;
-        activeCells.Add(index);
-        List<GridIndex> neighbours = getNeighbourCells(index);
-        if(neighbours.Count >= 2)
-        {
-            floodFill();
-        }
-        setUIPercentage();
-    }
-
-    void setUIPercentage()
-    {
-        int fillPercent = (int)((float)filledCells / (float)totalCells * 100);
-        percentageText.text = "Progress: " + fillPercent + "/80";
-    }
-
-    public bool isCaught(GridIndex index)
-    {
-        List<GridIndex> neighbours = getNeighbourCells(index);
-        if (neighbours.Count == 4)
-            return true;
-        else
-            return false;
-    }
-
-    List<GridIndex> getNeighbourCells(GridIndex index)
-    {
-        List<GridIndex> neighbours = new List<GridIndex>();
-        if (gridMap[new GridIndex(index.x + 1, index.y)].isActive)  neighbours.Add(new GridIndex(index.x + 1, index.y));
-        if (gridMap[new GridIndex(index.x - 1, index.y)].isActive)  neighbours.Add(new GridIndex(index.x - 1, index.y));
-        if (gridMap[new GridIndex(index.x, index.y + 1)].isActive)  neighbours.Add(new GridIndex(index.x, index.y + 1));
-        if (gridMap[new GridIndex(index.x, index.y - 1)].isActive)  neighbours.Add(new GridIndex(index.x, index.y - 1));
-        return neighbours;
-    }
-
     bool floodFill()
     {
         bool didFlood = false;
-        foreach(GridIndex index in gridMap.Keys)
+        foreach (GridIndex index in gridMap.Keys)
         {
-            if(!gridMap[index].isActive)
+            if (!gridMap[index].isActive)
             {
                 List<GridIndex> activeBounds = new List<GridIndex>();
                 List<GridIndex> LeftCells = new List<GridIndex>();
@@ -135,13 +88,13 @@ public class GameController : MonoBehaviour
                 List<GridIndex> DownCells = new List<GridIndex>();
                 foreach (GridIndex idx in gridMap.Keys)
                 {
-                    if(idx.x == index.x)
+                    if (idx.x == index.x)
                     {
-                        if(idx.y < index.y)
+                        if (idx.y < index.y)
                         {
                             DownCells.Add(idx);
                         }
-                        if(idx.y > index.y)
+                        if (idx.y > index.y)
                         {
                             UpCells.Add(idx);
                         }
@@ -158,7 +111,7 @@ public class GameController : MonoBehaviour
                         }
                     }
                 }
-                foreach(GridIndex i in LeftCells)
+                foreach (GridIndex i in LeftCells)
                 {
                     if (gridMap[i].isActive && !gridMap[i].isResolved)
                     {
@@ -212,55 +165,51 @@ public class GameController : MonoBehaviour
         return didFlood;
     }
 
-    void pacMovement()
-    {
-        if (!pacman) return;
+    #endregion
 
-        if(Input.GetKey(KeyCode.LeftArrow) && !pacman.isMoving)
-        {
-            pacman.Move(new Vector2(-1, 0));
-            return;
-        }
-        if (Input.GetKey(KeyCode.RightArrow) && !pacman.isMoving)
-        {
-            pacman.Move(new Vector2(1, 0));
-            return;
-        }
-        if (Input.GetKey(KeyCode.UpArrow) && !pacman.isMoving)
-        {
-            pacman.Move(new Vector2(0, 1));
-            return;
-        }
-        if (Input.GetKey(KeyCode.DownArrow) && !pacman.isMoving)
-        {
-            pacman.Move(new Vector2(0, -1));
-            return;
-        }
-        if(!pacman.isMoving)
-        {
-            pacman.Move();
-            return;
-        }
+    #region Cell Functions
+    public bool isCellActive(GridIndex index)
+    {
+        return gridMap[index].isActive;
     }
 
-    public void loseLife()
+    public void setCellActive(GridIndex index)
     {
-        lives--;
-        livesText.text = "Lives: " + lives;
-        foreach(GridIndex index in activeCells)
+        gridMap[index].setActive(true);
+        filledCells++;
+        activeCells.Add(index);
+        List<GridIndex> neighbours = getNeighbourCells(index);
+        if(neighbours.Count >= 2)
         {
-            gridMap[index].setActive(false);
+            floodFill();
         }
-        if (lives > 0)
-            spawnPacman(randomCell());
+        setUIPercentage();
+    }
 
+    public bool isCaught(GridIndex index)
+    {
+        List<GridIndex> neighbours = getNeighbourCells(index);
+        if (neighbours.Count == 4)
+            return true;
+        else
+            return false;
+    }
+
+    List<GridIndex> getNeighbourCells(GridIndex index)
+    {
+        List<GridIndex> neighbours = new List<GridIndex>();
+        if (gridMap[new GridIndex(index.x + 1, index.y)].isActive) neighbours.Add(new GridIndex(index.x + 1, index.y));
+        if (gridMap[new GridIndex(index.x - 1, index.y)].isActive) neighbours.Add(new GridIndex(index.x - 1, index.y));
+        if (gridMap[new GridIndex(index.x, index.y + 1)].isActive) neighbours.Add(new GridIndex(index.x, index.y + 1));
+        if (gridMap[new GridIndex(index.x, index.y - 1)].isActive) neighbours.Add(new GridIndex(index.x, index.y - 1));
+        return neighbours;
     }
 
     GridIndex randomCell()
     {
         GridIndex index = new GridIndex();
         bool spawned = false;
-        while(!spawned)
+        while (!spawned)
         {
             int x = Random.Range(1, width - 2);
             int y = Random.Range(1, height - 2);
@@ -272,4 +221,69 @@ public class GameController : MonoBehaviour
         Debug.Log(index.x + " " + index.y);
         return index;
     }
+
+    #endregion
+
+    #region UI Management
+    void setUIPercentage()
+    {
+        int fillPercent = (int)((float)filledCells / (float)totalCells * 100);
+        percentageText.text = "Progress: " + fillPercent + "/80";
+    }
+
+    public void loseLife()
+    {
+        lives--;
+        livesText.text = "Lives: " + lives;
+        foreach (GridIndex index in activeCells)
+        {
+            gridMap[index].setActive(false);
+        }
+        if (lives > 0)
+            spawnPacman(randomCell());
+
+    }
+
+    #endregion
+
+    #region Pacman Management
+    void pacMovement()
+    {
+        if (!pacman) return;
+
+        if((Input.GetKey(KeyCode.LeftArrow) || swipeManager.SwipeLeft) && !pacman.isMoving)
+        {
+            pacman.Move(new Vector2(-1, 0));
+            return;
+        }
+        if ((Input.GetKey(KeyCode.RightArrow) || swipeManager.SwipeRight) && !pacman.isMoving)
+        {
+            pacman.Move(new Vector2(1, 0));
+            return;
+        }
+        if ((Input.GetKey(KeyCode.UpArrow) || swipeManager.SwipeUp) && !pacman.isMoving)
+        {
+            pacman.Move(new Vector2(0, 1));
+            return;
+        }
+        if ((Input.GetKey(KeyCode.DownArrow) || swipeManager.SwipeDown) && !pacman.isMoving)
+        {
+            pacman.Move(new Vector2(0, -1));
+            return;
+        }
+        if(!pacman.isMoving)
+        {
+            pacman.Move();
+            return;
+        }
+    }
+
+    void spawnPacman(GridIndex index)
+    {
+        GameObject pacSpawn = gridMap[index].spawnObject(pacmanObject);
+        pacman = pacSpawn.GetComponent<Pacman>();
+        pacman.pacmanInit(index, this);
+    }
+
+    #endregion
 }

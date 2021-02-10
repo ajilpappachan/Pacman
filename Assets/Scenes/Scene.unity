@@ -242,6 +242,7 @@ GameObject:
   m_Component:
   - component: {fileID: 800381780}
   - component: {fileID: 800381781}
+  - component: {fileID: 800381782}
   m_Layer: 0
   m_Name: GameController
   m_TagString: GameController
@@ -284,6 +285,18 @@ MonoBehaviour:
   BASE_SPEED: 0.1
   pacmanObject: {fileID: 8824589975643685413, guid: eb677aa3b6aaf4f80bdad0a819a6aa15, type: 3}
   lives: 3
+--- !u!114 &800381782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800381779}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3dc0ce2c6d2c004897957672703c879, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &811135781
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -411,7 +424,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'Lives : 3'
+  m_Text: 'Lives: 3'
 --- !u!222 &1216115972
 CanvasRenderer:
   m_ObjectHideFlags: 0
