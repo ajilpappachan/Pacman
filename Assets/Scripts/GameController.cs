@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(SwipeManager))]
 public class GameController : MonoBehaviour
@@ -19,6 +20,9 @@ public class GameController : MonoBehaviour
     [SerializeField] Text livesText;
     int totalCells;
     int filledCells;
+    [SerializeField] GameObject gameOverUI;
+    [SerializeField] GameObject youWinUI;
+    [SerializeField] GameObject youLoseUI;
 
     [Header("Character Setup")]
     public float BASE_SPEED;
@@ -229,6 +233,8 @@ public class GameController : MonoBehaviour
     {
         int fillPercent = (int)((float)filledCells / (float)totalCells * 100);
         percentageText.text = "Progress: " + fillPercent + "/80";
+        if (fillPercent > 80)
+            YouWin();
     }
 
     public void loseLife()
@@ -241,6 +247,8 @@ public class GameController : MonoBehaviour
         }
         if (lives > 0)
             spawnPacman(randomCell());
+        else
+            YouLose();
 
     }
 
@@ -283,6 +291,29 @@ public class GameController : MonoBehaviour
         GameObject pacSpawn = gridMap[index].spawnObject(pacmanObject);
         pacman = pacSpawn.GetComponent<Pacman>();
         pacman.pacmanInit(index, this);
+    }
+
+    #endregion
+
+    #region Level Management
+
+    void YouWin()
+    {
+        Time.timeScale = 0.0f;
+        gameOverUI.SetActive(true);
+        youWinUI.SetActive(true);
+    }
+
+    void YouLose()
+    {
+        Time.timeScale = 0.0f;
+        gameOverUI.SetActive(true);
+        youLoseUI.SetActive(true);
+    }
+
+    public void Restart()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     #endregion
