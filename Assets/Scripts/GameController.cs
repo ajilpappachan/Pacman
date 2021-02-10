@@ -40,6 +40,7 @@ public class GameController : MonoBehaviour
         filledCells = 0;
         swipeManager = GetComponent<SwipeManager>();
         gridInit();
+        Time.timeScale = 1.0f;
     }
 
     // Update is called once per frame
@@ -244,6 +245,12 @@ public class GameController : MonoBehaviour
         foreach (GridIndex index in activeCells)
         {
             gridMap[index].setActive(false);
+        }
+        activeCells.Clear();
+        foreach(GridIndex index in gridMap.Keys)
+        {
+            if (gridMap[index].isActive)
+                gridMap[index].setResolved(true);
         }
         if (lives > 0)
             spawnPacman(randomCell());

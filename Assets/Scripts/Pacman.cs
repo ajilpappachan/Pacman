@@ -11,6 +11,7 @@ public class Pacman : MonoBehaviour
     public bool isMoving;
     GridIndex nextCell;
     Vector2 currentDir;
+    Vector2 nextDir;
     Animator animator;
     [SerializeField] ParticleSystem particleSystem;
     [SerializeField] Color particleColor;
@@ -44,8 +45,8 @@ public class Pacman : MonoBehaviour
     public void Move(Vector2 direction)
     {
         nextCell = new GridIndex(index.x + (int)direction.x, index.y + (int)direction.y);
-        if(!controller.isCellActive(nextCell))
-            StartCoroutine(move(direction));
+        if(!controller.isCellActive(nextCell) && nextDir == Vector2.zero)
+            StartCoroutine(moveQueue(direction));
         StartCoroutine(rotate(direction));
     }
 
@@ -92,6 +93,15 @@ public class Pacman : MonoBehaviour
         animator.SetFloat("Horizontal", dir.x);
         animator.SetFloat("Vertical", dir.y);
         currentDir = dir;
+    }
+
+    IEnumerator moveQueue(Vector2 dir)
+    {
+        nextDir = dir;
+        while(isMoving)
+            yield return null;
+        move(dir);
+        nextDir = Vector2.zero;
     }
 
     IEnumerator playParticles()
