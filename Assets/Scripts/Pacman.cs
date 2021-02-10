@@ -12,6 +12,8 @@ public class Pacman : MonoBehaviour
     GridIndex nextCell;
     Vector2 currentDir;
     Animator animator;
+    [SerializeField] ParticleSystem particleSystem;
+    [SerializeField] Color particleColor;
     
     // Start is called before the first frame update
     void Start()
@@ -25,6 +27,7 @@ public class Pacman : MonoBehaviour
         if (controller.isCaught(index))
         {
             controller.loseLife();
+            StartCoroutine(playParticles());
             Destroy(gameObject);
         }
     }
@@ -89,5 +92,14 @@ public class Pacman : MonoBehaviour
         animator.SetFloat("Horizontal", dir.x);
         animator.SetFloat("Vertical", dir.y);
         currentDir = dir;
+    }
+
+    IEnumerator playParticles()
+    {
+        ParticleSystem.MainModule psmain = particleSystem.main;
+        psmain.startColor = particleColor;
+        ParticleSystem ps = Instantiate(particleSystem, transform.position, Quaternion.identity);
+        yield return new WaitForSeconds(particleSystem.main.duration);
+        Destroy(ps);
     }
 }
