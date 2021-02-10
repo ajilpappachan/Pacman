@@ -10,6 +10,7 @@ public class Cell : MonoBehaviour
     [SerializeField] GameObject brickObject;
     [SerializeField] GameObject spawner;
     GameObject spawnedBrick;
+    GameObject occupiedObject;
 
     // Start is called before the first frame update
     void Start()
@@ -47,8 +48,8 @@ public class Cell : MonoBehaviour
     public GameObject spawnObject(GameObject obj)
     {
         if (cell.isActive) { Debug.Log("IS ACTIVE"); return null; }
-        GameObject spawned = Instantiate(obj, spawner.transform.position, Quaternion.identity);
-        return spawned;
+        occupiedObject = Instantiate(obj, spawner.transform.position, Quaternion.identity);
+        return occupiedObject;
     }
 
     private void OnTriggerExit(Collider other)
@@ -57,6 +58,12 @@ public class Cell : MonoBehaviour
         if(other.TryGetComponent(out pacman))
         {
             controller.setCellActive(index);
+            if(occupiedObject)
+                occupiedObject = null;
+        }
+        if(other.gameObject == occupiedObject)
+        {
+            occupiedObject = null;
         }
     }
 }

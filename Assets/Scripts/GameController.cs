@@ -26,12 +26,21 @@ public class GameController : MonoBehaviour
 
     [Header("Character Setup")]
     public float BASE_SPEED;
+    public int PACMAN_SPEED_MULTIPIER;
+    public int SLOWGHOST_SPEED_MULTIPLIER;
+    public int FASTGHOST_SPEED_MULTIPLIER;
     SwipeManager swipeManager;
 
     [Header("Pacman Setup")]
     [SerializeField] GameObject pacmanObject;
     Pacman pacman;
     [SerializeField] int lives = 3;
+
+    [Header("Ghosts Setup")]
+    [SerializeField] GameObject slowGhostObject;
+    [SerializeField] GameObject fastGhostObject;
+    [SerializeField] int slowGhostCount = 3;
+    [SerializeField] int fastGhostCount = 2;
 
     // Start is called before the first frame update
     void Start()
@@ -77,6 +86,8 @@ public class GameController : MonoBehaviour
             }
         }
         spawnPacman(randomCell());
+        for (int c = 0; c < slowGhostCount; c++) spawnSlowGhost(randomCell());
+        for (int c = 0; c < fastGhostCount; c++) spawnFastGhost(randomCell());
     }
 
     bool floodFill()
@@ -298,6 +309,22 @@ public class GameController : MonoBehaviour
         GameObject pacSpawn = gridMap[index].spawnObject(pacmanObject);
         pacman = pacSpawn.GetComponent<Pacman>();
         pacman.pacmanInit(index, this);
+    }
+
+    #endregion
+
+    #region Ghost Management
+
+    void spawnFastGhost(GridIndex index)
+    {
+        GameObject ghostSpawn = gridMap[index].spawnObject(fastGhostObject);
+        ghostSpawn.GetComponent<Ghost>().ghostInit(index, this, GhostType.FAST);
+    }
+
+    void spawnSlowGhost(GridIndex index)
+    {
+        GameObject ghostSpawn = gridMap[index].spawnObject(slowGhostObject);
+        ghostSpawn.GetComponent<Ghost>().ghostInit(index, this, GhostType.SLOW);
     }
 
     #endregion

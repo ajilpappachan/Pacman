@@ -522,8 +522,15 @@ MonoBehaviour:
   youWinUI: {fileID: 1183739845}
   youLoseUI: {fileID: 523515181}
   BASE_SPEED: 0.1
+  PACMAN_SPEED_MULTIPIER: 2
+  SLOWGHOST_SPEED_MULTIPLIER: 1
+  FASTGHOST_SPEED_MULTIPLIER: 3
   pacmanObject: {fileID: 8824589975643685413, guid: eb677aa3b6aaf4f80bdad0a819a6aa15, type: 3}
   lives: 3
+  slowGhostObject: {fileID: 7023965171323675800, guid: 74fcde390e4884ef59aea8bc67174630, type: 3}
+  fastGhostObject: {fileID: 1483578727613994537, guid: 06029d1f9c9894fac8968f9fb29c9109, type: 3}
+  slowGhostCount: 3
+  fastGhostCount: 2
 --- !u!114 &800381782
 MonoBehaviour:
   m_ObjectHideFlags: 0
