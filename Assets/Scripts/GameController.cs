@@ -42,25 +42,35 @@ public class GameController : MonoBehaviour
     [SerializeField] int slowGhostCount = 3;
     [SerializeField] int fastGhostCount = 2;
 
+    [Header("Power Up Setup")]
+    [SerializeField] GameObject powerUpObject;
+    [SerializeField] float powerUpSpawnDuration = 5.0f;
+    [SerializeField] float powerUpLifeDuration = 8.0f;
+    [SerializeField] float powerUpEffectDuration = 3.0f;
+
     // Start is called before the first frame update
     void Start()
     {
-        totalCells = (height - 2) * (width - 2); // Total Cells Excluding the border cells
+        totalCells = (height - 2) * (width - 2);        // Total Cells Excluding the border cells
         filledCells = 0;
-        swipeManager = GetComponent<SwipeManager>();
-        gridInit();
+        swipeManager = GetComponent<SwipeManager>();    // Initialise Swipe Manager
+        gridInit();                                     //Set up Grid
+        SpawnPowerUp();                                 //Start PowerUp Timer
         Time.timeScale = 1.0f;
     }
 
     // Update is called once per frame
     void Update()
     {
-        pacMovement();
+        pacMovement();                                  //Take Input for Player
     }
 
     #region Grid Management
+
+    //Initialise Grid
     void gridInit()
     {
+        //Spawn Cells
         for(int row = 0; row < height; row++)
         {
             for(int column = 0; column < width; column++)
@@ -74,8 +84,10 @@ public class GameController : MonoBehaviour
             }
         }
 
+        //Adjust Camera to Fit the full Grid
         Camera.main.transform.position = new Vector3(width / 2, height, 0.0f);
 
+        //Spawn Borders
         foreach(GridIndex index in gridMap.Keys)
         {
             if(index.x == 0 || index.x == width - 1 || index.y == 0 || index.y == height - 1)
@@ -85,16 +97,19 @@ public class GameController : MonoBehaviour
                 continue;
             }
         }
+        //Spawn Pacman and Ghosts
         spawnPacman(randomCell());
         for (int c = 0; c < slowGhostCount; c++) spawnSlowGhost(randomCell());
         for (int c = 0; c < fastGhostCount; c++) spawnFastGhost(randomCell());
     }
 
+    //Fill area bound by walls. Derived from Flood Fill Algorithm
     bool floodFill()
     {
         bool didFlood = false;
         foreach (GridIndex index in gridMap.Keys)
         {
+            // For every Inactive Object Check if it is bound by walls on at least 2 sides
             if (!gridMap[index].isActive)
             {
                 List<GridIndex> activeBounds = new List<GridIndex>();
@@ -162,85 +177,187 @@ public class GameController : MonoBehaviour
                 if (activeBounds.Count > 2)
                 {
                     gridMap[index].setActive(true);
-                    //gridMap[index].setResolved(true);
+                    gridMap[index].setResolved(true);
                     filledCells++;
                     activeCells.Add(index);
                     didFlood = true;
                 }
             }
         }
-        //if(didFlood)
-        //{
-        //    foreach (GridIndex idx in activeCells)
-        //    {
-        //        gridMap[idx].setResolved(true);
-        //    }
-        //    activeCells.Clear();
-        //}
-        if (didFlood) activeCells.Clear();
+        //Resolve all active cells to prevent ghost from touching it
+        foreach (GridIndex idx in activeCells)
+        {
+            gridMap[idx].setResolved(true);
+        }
+        activeCells.Clear();
+        //If player is stuck inside the wall boundary, kill the player
+        if (isCaught(pacman.index))
+        {
+            loseLife();
+        }
         return didFlood;
     }
+
+    //Pathfinding using A* Algorithm !!!!Causes Stack Overflow!!!!!
+
+    //public List<GridIndex> findPath(GridIndex start, GridIndex target)
+    //{
+    //    List<GridIndex> path = new List<GridIndex>();
+    //    path = findNext(start, target, path);
+    //    return path;
+    //}
+
+    //List<GridIndex> findNext(GridIndex index, GridIndex target, List<GridIndex> list)
+    //{
+    //    List<GridIndex> neighbours = getNeighbourCells(index);
+    //    GridIndex bestNeighbour = new GridIndex();
+    //    float bestDistance = 15.0f;
+    //    foreach(GridIndex neighbour in neighbours)
+    //    {
+    //        float distance = getVector(index, target).magnitude;
+    //        if (distance < bestDistance)
+    //        {
+    //            bestDistance = distance;
+    //            bestNeighbour = neighbour;
+    //        }
+    //    }
+    //    list.Add(bestNeighbour);
+    //    list = findNext(bestNeighbour, target, list);
+    //    return list;
+    //}
 
     #endregion
 
     #region Cell Functions
+    
+    //Check if a cell has wall
     public bool isCellActive(GridIndex index)
     {
-        return gridMap[index].isActive;
+        if (gridMap.ContainsKey(index))
+            return gridMap[index].isActive;
+        else
+            Debug.Log(index.x + " " + index.y);
+        return false;
     }
 
+    //Add a new wall
     public void setCellActive(GridIndex index)
     {
         gridMap[index].setActive(true);
         filledCells++;
         activeCells.Add(index);
-        List<GridIndex> neighbours = getNeighbourCells(index);
+        //If the new wall has at least two active neighbours, check for flood fill
+        List<GridIndex> neighbours = getActiveNeighbourCells(index);
         if(neighbours.Count >= 2)
         {
             floodFill();
         }
+        //Set the progress UI
         setUIPercentage();
     }
 
+    //check if cell is currently active (i.e, unresolved wall is present)
+    public bool isActive(GridIndex index)
+    {
+        return activeCells.Contains(index);
+    }
+
+    //Check if any obect is bound within walls
     public bool isCaught(GridIndex index)
     {
-        List<GridIndex> neighbours = getNeighbourCells(index);
+        List<GridIndex> neighbours = getActiveNeighbourCells(index);
         if (neighbours.Count == 4)
             return true;
         else
             return false;
     }
 
-    List<GridIndex> getNeighbourCells(GridIndex index)
+    //Get All neighbouring cells (in 4 directions)
+    public List<GridIndex> getNeighbourCells(GridIndex index)
     {
         List<GridIndex> neighbours = new List<GridIndex>();
-        if (gridMap[new GridIndex(index.x + 1, index.y)].isActive) neighbours.Add(new GridIndex(index.x + 1, index.y));
-        if (gridMap[new GridIndex(index.x - 1, index.y)].isActive) neighbours.Add(new GridIndex(index.x - 1, index.y));
-        if (gridMap[new GridIndex(index.x, index.y + 1)].isActive) neighbours.Add(new GridIndex(index.x, index.y + 1));
-        if (gridMap[new GridIndex(index.x, index.y - 1)].isActive) neighbours.Add(new GridIndex(index.x, index.y - 1));
+        if (gridMap.ContainsKey(new GridIndex(index.x + 1, index.y))) neighbours.Add(new GridIndex(index.x + 1, index.y));
+        if (gridMap.ContainsKey(new GridIndex(index.x - 1, index.y))) neighbours.Add(new GridIndex(index.x - 1, index.y));
+        if (gridMap.ContainsKey(new GridIndex(index.x, index.y + 1))) neighbours.Add(new GridIndex(index.x, index.y + 1));
+        if (gridMap.ContainsKey(new GridIndex(index.x, index.y - 1))) neighbours.Add(new GridIndex(index.x, index.y - 1));
         return neighbours;
     }
 
+    //Get All neighbouring cells that has walls
+    List<GridIndex> getActiveNeighbourCells(GridIndex index)
+    {
+        List<GridIndex> neighbours = new List<GridIndex>();
+        try
+        {
+            if (gridMap[new GridIndex(index.x + 1, index.y)].isActive) neighbours.Add(new GridIndex(index.x + 1, index.y));
+            if (gridMap[new GridIndex(index.x - 1, index.y)].isActive) neighbours.Add(new GridIndex(index.x - 1, index.y));
+            if (gridMap[new GridIndex(index.x, index.y + 1)].isActive) neighbours.Add(new GridIndex(index.x, index.y + 1));
+            if (gridMap[new GridIndex(index.x, index.y - 1)].isActive) neighbours.Add(new GridIndex(index.x, index.y - 1));
+        }
+        catch
+        {
+            Debug.Log(index.x + " " + index.y);
+        }
+        return neighbours;
+    }
+
+    //Get a random inactive cell from the grid
     GridIndex randomCell()
     {
         GridIndex index = new GridIndex();
         bool spawned = false;
         while (!spawned)
         {
-            int x = Random.Range(1, width - 2);
-            int y = Random.Range(1, height - 2);
-            Debug.Log(x);
-            Debug.Log(y);
+            int x = Random.Range(1, width - 1);
+            int y = Random.Range(1, height - 1);
             index = new GridIndex(x, y);
             spawned = !gridMap[index].isActive;
         }
-        Debug.Log(index.x + " " + index.y);
         return index;
+    }
+
+    //Get a random active cell from the grid
+    public GridIndex randomActiveCell()
+    {
+        if (activeCells.Count > 0)
+        {
+            int index = Random.Range(0, activeCells.Count);
+            return activeCells[index];
+        }
+        else return new GridIndex();
+    }
+
+    //Get the vector distance between two cells
+    public Vector2 getVector(GridIndex from, GridIndex to)
+    {
+        int x = to.x - from.x;
+        int y = to.y - from.y;
+        return new Vector2(x, y);
+    }
+
+    //Get a random boundary wall
+    public GridIndex getRandomBoundary()
+    {
+        List<GridIndex> boundaries = new List<GridIndex>();
+        foreach(GridIndex index in gridMap.Keys)
+        {
+            if (index.x == 0 || index.y == 0 || index.x == (width - 1) || index.y == (height - 1))
+                boundaries.Add(index);
+        }
+        return boundaries[Random.Range(0, boundaries.Count)];
+    }
+
+    //Set the resolved status of a cell
+    public bool isResolved(GridIndex index)
+    {
+        return gridMap[index].isResolved;
     }
 
     #endregion
 
     #region UI Management
+    
+    //Modify progress bar UI
     void setUIPercentage()
     {
         int fillPercent = (int)((float)filledCells / (float)totalCells * 100);
@@ -249,10 +366,12 @@ public class GameController : MonoBehaviour
             YouWin();
     }
 
+    //Update Lives and UI when player dies and respawn if needed
     public void loseLife()
     {
         lives--;
         livesText.text = "Lives: " + lives;
+        pacman.kill();
         foreach (GridIndex index in activeCells)
         {
             gridMap[index].setActive(false);
@@ -273,6 +392,8 @@ public class GameController : MonoBehaviour
     #endregion
 
     #region Pacman Management
+
+    //Get input for Player movement
     void pacMovement()
     {
         if (!pacman) return;
@@ -304,6 +425,7 @@ public class GameController : MonoBehaviour
         }
     }
 
+    //spawn Player at any cell
     void spawnPacman(GridIndex index)
     {
         GameObject pacSpawn = gridMap[index].spawnObject(pacmanObject);
@@ -313,14 +435,55 @@ public class GameController : MonoBehaviour
 
     #endregion
 
-    #region Ghost Management
+    #region Power Up Management
 
+    //Spawn a power up after some time
+    public void SpawnPowerUp()
+    {
+        StartCoroutine("spawnPowerUp");
+    }
+
+    IEnumerator spawnPowerUp()
+    {
+        yield return new WaitForSeconds(powerUpSpawnDuration);
+        GridIndex index = randomCell();
+        GameObject powerup = gridMap[index].spawnObject(powerUpObject);
+        powerup.GetComponent<PowerUp>().powerUpInit(index, this, powerUpLifeDuration);
+    }
+
+    //Use powerup to slow down ghosts
+    public void UsePowerUp()
+    {
+        StartCoroutine("usePowerUp");
+        spawnPowerUp();
+    }
+
+    IEnumerator usePowerUp()
+    {
+        Ghost[] ghosts = FindObjectsOfType<Ghost>();
+        foreach (Ghost ghost in ghosts)
+        {
+            ghost.slowSpeed(true);
+        }
+        yield return new WaitForSeconds(powerUpEffectDuration);
+        foreach (Ghost ghost in ghosts)
+        {
+            ghost.slowSpeed(false);
+        }
+    }
+
+    #endregion
+
+    #region Ghost Management
+    
+    //Spawn a ghost of fast type
     void spawnFastGhost(GridIndex index)
     {
         GameObject ghostSpawn = gridMap[index].spawnObject(fastGhostObject);
         ghostSpawn.GetComponent<Ghost>().ghostInit(index, this, GhostType.FAST);
     }
 
+    //Spawn a ghost of slow type
     void spawnSlowGhost(GridIndex index)
     {
         GameObject ghostSpawn = gridMap[index].spawnObject(slowGhostObject);
@@ -331,6 +494,7 @@ public class GameController : MonoBehaviour
 
     #region Level Management
 
+    //Win Condition UI
     void YouWin()
     {
         Time.timeScale = 0.0f;
@@ -338,6 +502,7 @@ public class GameController : MonoBehaviour
         youWinUI.SetActive(true);
     }
 
+    //Lose Condition UI
     void YouLose()
     {
         Time.timeScale = 0.0f;
@@ -345,6 +510,7 @@ public class GameController : MonoBehaviour
         youLoseUI.SetActive(true);
     }
 
+    //Restart Game
     public void Restart()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);

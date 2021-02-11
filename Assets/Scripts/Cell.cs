@@ -12,18 +12,7 @@ public class Cell : MonoBehaviour
     GameObject spawnedBrick;
     GameObject occupiedObject;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
+    //Initialise Cell
     public GridCell cellInit(GridIndex index, GameController controller)
     {
         this.index = index;
@@ -32,6 +21,7 @@ public class Cell : MonoBehaviour
         return cell;
     }
 
+    //Spawn a brick object
     public void spawnBrick()
     {
         if (cell.isActive) return;
@@ -39,12 +29,14 @@ public class Cell : MonoBehaviour
         spawnedBrick.transform.SetParent(spawner.transform);
     }
 
+    //Destroy brick object
     public void destroyBrick()
     {
         if (!cell.isActive) return;
         Destroy(spawnedBrick);
     }
 
+    //Spawn any object if no brick present
     public GameObject spawnObject(GameObject obj)
     {
         if (cell.isActive) { Debug.Log("IS ACTIVE"); return null; }
@@ -52,6 +44,7 @@ public class Cell : MonoBehaviour
         return occupiedObject;
     }
 
+    //Check if Player left the cell to spawn a brick
     private void OnTriggerExit(Collider other)
     {
         Pacman pacman;
@@ -61,6 +54,7 @@ public class Cell : MonoBehaviour
             if(occupiedObject)
                 occupiedObject = null;
         }
+        //For any other object other than player
         if(other.gameObject == occupiedObject)
         {
             occupiedObject = null;

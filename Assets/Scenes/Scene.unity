@@ -521,7 +521,7 @@ MonoBehaviour:
   gameOverUI: {fileID: 736727710}
   youWinUI: {fileID: 1183739845}
   youLoseUI: {fileID: 523515181}
-  BASE_SPEED: 0.1
+  BASE_SPEED: 1
   PACMAN_SPEED_MULTIPIER: 2
   SLOWGHOST_SPEED_MULTIPLIER: 1
   FASTGHOST_SPEED_MULTIPLIER: 3
@@ -531,6 +531,10 @@ MonoBehaviour:
   fastGhostObject: {fileID: 1483578727613994537, guid: 06029d1f9c9894fac8968f9fb29c9109, type: 3}
   slowGhostCount: 3
   fastGhostCount: 2
+  powerUpObject: {fileID: 1173307677343845598, guid: 13393162c12d04458b6c51fd48629dfc, type: 3}
+  powerUpSpawnDuration: 5
+  powerUpLifeDuration: 8
+  powerUpEffectDuration: 3
 --- !u!114 &800381782
 MonoBehaviour:
   m_ObjectHideFlags: 0
